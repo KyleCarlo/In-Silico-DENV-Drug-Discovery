@@ -1,0 +1,23 @@
+{
+  "name": "in-silico-denv-drug-discovery",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KyleCarlo/In-Silico-DENV-Drug-Discovery.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/KyleCarlo/In-Silico-DENV-Drug-Discovery/issues"
+  },
+  "homepage": "https://github.com/KyleCarlo/In-Silico-DENV-Drug-Discovery#readme",
+  "description": "",
+  "dependencies": {
+    "nglview-js-widgets": "^3.1.5",
+    "semver": "^7.7.2"
+  }
+}

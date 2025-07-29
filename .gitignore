@@ -106,3 +106,5 @@ ENV/
 
 .ipynb_checkpoints/
 node_modules/
+
+*.rst

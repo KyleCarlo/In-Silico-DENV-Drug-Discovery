@@ -1,7 +1,0 @@
-# Authors
-
-# Description
-
-# Tools
-
-# References

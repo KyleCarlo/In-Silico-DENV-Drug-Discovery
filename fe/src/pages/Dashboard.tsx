@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Upload, 
   Play, 
@@ -20,31 +20,80 @@ import {
   Settings,
   User,
   LogOut,
-  X
+  X,
+  Loader2,
+  RefreshCw
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "@/hooks/use-toast";
+
+// API Integration
+import { useProteins, useLigands, useDocking, useHealth } from "@/hooks/use-api";
+import { DockingParameters } from "@/lib/api";
+
+// Assets
 import pharmtomLogo from "@/assets/pharmtom_tp.png";
 import proteinImage from "@/assets/2BMF.png";
 import ligandImage from "@/assets/CCCSc1ncc(c(n1)C(=O)Nc2nc3ccc(cc3s2)OC)Cl.png";
 import interaction2D from "@/assets/interaction.png";
 import interaction3D from "@/assets/interaction_3d.png";
 import resultImage from "@/assets/result.png";
-import { useNavigate } from "react-router-dom";
 
 export const Dashboard = () => {
   const navigate = useNavigate();
+  
+  // API Hooks
+  const { proteins, uploadProtein, isLoading: proteinsLoading } = useProteins();
+  const { ligands, createLigandFromSmiles, uploadLigand, isLoading: ligandsLoading } = useLigands();
+  const { jobs, activeJob, createDockingJob, pollJobStatus, getJobResults, isLoading: dockingLoading } = useDocking();
+  const { isHealthy } = useHealth();
+
+  // UI State
   const [currentStep, setCurrentStep] = useState(1);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [selectedProtein, setSelectedProtein] = useState("");
   const [selectedLigand, setSelectedLigand] = useState("");
   const [showProteinImage, setShowProteinImage] = useState(false);
   const [showLigandImage, setShowLigandImage] = useState(false);
   const [enlargedImage, setEnlargedImage] = useState<{ src: string; alt: string } | null>(null);
-  const [searchSpaceX, setSearchSpaceX] = useState("2.5");
-  const [searchSpaceY, setSearchSpaceY] = useState("2.5");
-  const [searchSpaceZ, setSearchSpaceZ] = useState("5.0");
-  const [isShowingInteraction, setIsShowingInteraction] = useState(false);
   const [showInteractionImages, setShowInteractionImages] = useState(false);
+
+  // Form State
+  const [customSmiles, setCustomSmiles] = useState("");
+  const [ligandName, setLigandName] = useState("");
+  const [dockingParams, setDockingParams] = useState<DockingParameters>({
+    center_x: -2.68,
+    center_y: 23.88,
+    center_z: 39.77,
+    size_x: 25.0,
+    size_y: 25.0,
+    size_z: 25.0,
+    exhaustiveness: 8,
+    num_modes: 9,
+    energy_range: 3.0
+  });
+
+  // File upload refs
+  const proteinFileRef = useRef<HTMLInputElement>(null);
+  const ligandFileRef = useRef<HTMLInputElement>(null);
+
+  // Job progress state
+  const [jobProgress, setJobProgress] = useState(0);
+  const [jobResults, setJobResults] = useState<Record<string, unknown> | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [isShowingInteraction, setIsShowingInteraction] = useState(false);
+  
+  // Sync progress with active job
+  useEffect(() => {
+    if (activeJob) {
+      setProgress(activeJob.progress || 0);
+      setJobProgress(activeJob.progress || 0);
+    }
+  }, [activeJob]);
+
+  // Search space coordinates
+  const [searchSpaceX, setSearchSpaceX] = useState(dockingParams.center_x.toString());
+  const [searchSpaceY, setSearchSpaceY] = useState(dockingParams.center_y.toString());
+  const [searchSpaceZ, setSearchSpaceZ] = useState(dockingParams.center_z.toString());
 
   // Handle keyboard events for closing enlarged image
   useEffect(() => {
@@ -60,6 +109,31 @@ export const Dashboard = () => {
     };
   }, [enlargedImage]);
 
+  // Poll active job progress
+  useEffect(() => {
+    if (activeJob && (activeJob.status === 'running' || activeJob.status === 'pending')) {
+      const interval = setInterval(() => {
+        setJobProgress(activeJob.progress);
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  }, [activeJob]);
+
+  // Handle job completion
+  useEffect(() => {
+    if (activeJob && activeJob.status === 'completed') {
+      setCurrentStep(3);
+      setJobProgress(100);
+      
+      // Load results
+      getJobResults(activeJob.id).then(results => {
+        setJobResults(results);
+        setShowInteractionImages(true);
+      });
+    }
+  }, [activeJob, getJobResults]);
+
   const handleImageClick = (src: string, alt: string) => {
     setEnlargedImage({ src, alt });
   };
@@ -68,53 +142,84 @@ export const Dashboard = () => {
     setEnlargedImage(null);
   };
 
-  const handleProteinSelection = (protein: string) => {
-    setSelectedProtein(protein);
+  const handleProteinSelection = (proteinId: string) => {
+    setSelectedProtein(proteinId);
     setShowProteinImage(false);
-    if (protein) {
+    if (proteinId) {
       setTimeout(() => {
         setShowProteinImage(true);
       }, 1000);
     }
   };
 
-  const handleLigandSelection = (ligand: string) => {
-    setSelectedLigand(ligand);
+  const handleLigandSelection = (ligandId: string) => {
+    setSelectedLigand(ligandId);
     setShowLigandImage(false);
-    if (ligand) {
+    if (ligandId) {
       setTimeout(() => {
         setShowLigandImage(true);
       }, 1000);
     }
   };
 
-  const handleShowInteraction = () => {
-    setIsShowingInteraction(true);
-    setShowInteractionImages(false);
-    
-    // Simulate loading for 5 seconds
-    setTimeout(() => {
-      setIsShowingInteraction(false);
-      setShowInteractionImages(true);
-    }, 5000);
+  const handleProteinUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      await uploadProtein(file, file.name);
+    }
   };
 
-  const handleStartAnalysis = () => {
-    setIsProcessing(true);
-    setCurrentStep(2);
-    
-    // Simulate progress
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setCurrentStep(3);
-          setIsProcessing(false);
-          return 100;
-        }
-        return prev + 10;
+  const handleLigandUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      await uploadLigand(file, file.name);
+    }
+  };
+
+  const handleCreateLigandFromSmiles = async () => {
+    if (customSmiles && ligandName) {
+      const result = await createLigandFromSmiles(customSmiles, ligandName);
+      if (result) {
+        setSelectedLigand(result.ligand_id);
+        setCustomSmiles("");
+        setLigandName("");
+      }
+    }
+  };
+
+  const handleStartAnalysis = async () => {
+    if (!selectedProtein || !selectedLigand) {
+      toast({
+        title: "Missing Selection",
+        description: "Please select both protein and ligand before starting analysis",
+        variant: "destructive"
       });
-    }, 300);
+      return;
+    }
+
+    setCurrentStep(2);
+    setJobProgress(0);
+
+    try {
+      const job = await createDockingJob({
+        protein_id: selectedProtein,
+        ligand_id: selectedLigand,
+        parameters: dockingParams
+      });
+
+      if (job) {
+        // Start polling job status
+        pollJobStatus(job.id);
+      }
+    } catch (error) {
+      console.error('Failed to start docking job:', error);
+      setCurrentStep(1);
+    }
+  };
+
+  const handleShowInteraction = () => {
+    setIsShowingInteraction(true);
+    setShowInteractionImages(true);
   };
 
   return (
@@ -162,19 +267,39 @@ export const Dashboard = () => {
           {/* Left Sidebar - Quick Stats */}
           <div className="space-y-6">
             <Card className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Quick Stats</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Quick Stats</h3>
+                {!isHealthy && (
+                  <Badge variant="destructive" className="text-xs">
+                    <AlertCircle className="w-3 h-3 mr-1" />
+                    API Offline
+                  </Badge>
+                )}
+                {isHealthy && (
+                  <Badge variant="default" className="text-xs bg-green-500">
+                    <CheckCircle className="w-3 h-3 mr-1" />
+                    API Online
+                  </Badge>
+                )}
+              </div>
               <div className="space-y-4">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Analyses</span>
-                  <span className="font-semibold">247</span>
+                  <span className="text-muted-foreground">Total Jobs</span>
+                  <span className="font-semibold">{jobs.length}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Success Rate</span>
-                  <span className="font-semibold text-molecular-teal">99.2%</span>
+                  <span className="text-muted-foreground">Completed</span>
+                  <span className="font-semibold text-molecular-teal">
+                    {jobs.filter(job => job.status === 'completed').length}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Avg. Processing</span>
-                  <span className="font-semibold">2.3 min</span>
+                  <span className="text-muted-foreground">Proteins</span>
+                  <span className="font-semibold">{proteins.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Ligands</span>
+                  <span className="font-semibold">{ligands.length}</span>
                 </div>
               </div>
             </Card>
@@ -182,40 +307,48 @@ export const Dashboard = () => {
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Running Analyses</h3>
               <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-molecular-blue rounded-full animate-pulse" />
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">Protein-ABC123</div>
-                    <div className="text-xs text-muted-foreground">Started 3 min ago</div>
+                {jobs.filter(job => job.status === 'running' || job.status === 'pending').length === 0 ? (
+                  <div className="text-sm text-muted-foreground text-center py-4">
+                    No active jobs
                   </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 bg-molecular-teal rounded-full animate-pulse" />
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">Ligand-XYZ789</div>
-                    <div className="text-xs text-muted-foreground">Started 8 min ago</div>
-                  </div>
-                </div>
+                ) : (
+                  jobs.filter(job => job.status === 'running' || job.status === 'pending').map(job => (
+                    <div key={job.id} className="flex items-center gap-3">
+                      <div className={`w-2 h-2 rounded-full animate-pulse ${
+                        job.status === 'running' ? 'bg-molecular-blue' : 'bg-molecular-teal'
+                      }`} />
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">{job.id}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {job.status === 'running' ? `${job.progress}% complete` : 'Pending'}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </Card>
 
             <Card className="p-6">
               <h3 className="text-lg font-semibold mb-4">Recent Results</h3>
               <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-4 h-4 text-molecular-green" />
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">Analysis #246</div>
-                    <div className="text-xs text-muted-foreground">Completed • 99.4% confidence</div>
+                {jobs.filter(job => job.status === 'completed').slice(0, 3).length === 0 ? (
+                  <div className="text-sm text-muted-foreground text-center py-4">
+                    No completed jobs
                   </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="w-4 h-4 text-molecular-green" />
-                  <div className="flex-1">
-                    <div className="text-sm font-medium">Analysis #245</div>
-                    <div className="text-xs text-muted-foreground">Completed • 98.9% confidence</div>
-                  </div>
-                </div>
+                ) : (
+                  jobs.filter(job => job.status === 'completed').slice(0, 3).map(job => (
+                    <div key={job.id} className="flex items-center gap-3">
+                      <CheckCircle className="w-4 h-4 text-molecular-green" />
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">{job.id}</div>
+                        <div className="text-xs text-muted-foreground">
+                          Completed • {job.completed_at ? new Date(job.completed_at).toLocaleDateString() : 'Recently'}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </Card>
           </div>
@@ -264,9 +397,14 @@ export const Dashboard = () => {
                                 className="w-full p-3 border border-molecular-blue/20 rounded-lg bg-background hover:border-molecular-blue/40 transition-colors"
                                 value={selectedProtein}
                                 onChange={(e) => handleProteinSelection(e.target.value)}
+                                disabled={proteinsLoading}
                               >
-                                <option value="">Select protein structure...</option>
-                                <option value="2BMF">2BMF - Dengue Virus NS3 Protease</option>
+                                <option value="">{proteinsLoading ? 'Loading proteins...' : 'Select protein structure...'}</option>
+                                {proteins.map(protein => (
+                                  <option key={protein.id || protein.name} value={protein.id || protein.name}>
+                                    {protein.name} - {protein.pdb_id || protein.classification || 'Protein Structure'}
+                                  </option>
+                                ))}
                               </select>
                               <div className="border-2 border-dashed border-molecular-blue/20 rounded-lg p-8 text-center hover:border-molecular-blue/40 transition-colors cursor-pointer">
                                 <Upload className="w-8 h-8 text-molecular-blue mx-auto mb-2" />
@@ -293,9 +431,14 @@ export const Dashboard = () => {
                                 className="w-full p-3 border border-molecular-teal/20 rounded-lg bg-background hover:border-molecular-teal/40 transition-colors"
                                 value={selectedLigand}
                                 onChange={(e) => handleLigandSelection(e.target.value)}
+                                disabled={ligandsLoading}
                               >
-                                <option value="">Select ligand structure...</option>
-                                <option value="CCCSc1ncc(c(n1)C(=O)Nc2nc3ccc(cc3s2)OC)Cl">CCCSc1ncc(c(n1)C(=O)Nc2nc3ccc(cc3s2)OC)Cl</option>
+                                <option value="">{ligandsLoading ? 'Loading ligands...' : 'Select ligand structure...'}</option>
+                                {ligands.map(ligand => (
+                                  <option key={ligand.id || ligand.name} value={ligand.id || ligand.name}>
+                                    {ligand.name} - {ligand.smiles && ligand.smiles.length > 20 ? `${ligand.smiles.substring(0, 20)}...` : ligand.smiles || 'Ligand Structure'}
+                                  </option>
+                                ))}
                               </select>
                               <div className="border-2 border-dashed border-molecular-teal/20 rounded-lg p-8 text-center hover:border-molecular-teal/40 transition-colors cursor-pointer">
                                 <Upload className="w-8 h-8 text-molecular-teal mx-auto mb-2" />

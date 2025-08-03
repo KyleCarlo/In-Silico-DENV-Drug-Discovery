@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Play, Atom } from "lucide-react";
 import heroImage from "@/assets/hero-bg.jpg";
 import demoImage from "@/assets/demo-visual.jpg";
+import pharmtomLogo from "@/assets/pharmtom_tp.png";
 
 export const Hero = () => {
   const navigate = useNavigate();
@@ -23,12 +24,12 @@ export const Hero = () => {
           <div className="space-y-8">
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-molecular-blue">
-                <Atom className="w-6 h-6" />
-                <span className="text-sm font-semibold tracking-wide uppercase">
+                <img src={pharmtomLogo} alt="Pharmtom Labs" className="w-32 h-32" />
+                
+                <span className="text-2xl font-semibold tracking-wide uppercase">
                   Pharmtom™ Labs
                 </span>
-              </div>
-              
+              </div>              
               <h1 className="text-5xl lg:text-6xl font-bold leading-tight">
                 First
                 <span className="bg-gradient-to-r from-molecular-blue to-molecular-teal bg-clip-text text-transparent">
@@ -40,7 +41,7 @@ export const Hero = () => {
               
               <p className="text-xl text-muted-foreground leading-relaxed max-w-xl">
                 Revolutionary quantum computing platform that predicts protein-ligand interactions 
-                with unprecedented 99.2% accuracy. Beyond classical methods like SwissDock.
+                beyond classical limits using VQE.
               </p>
             </div>
 
@@ -115,7 +116,7 @@ export const Hero = () => {
                   </div>
                 </div>
 
-                <Button variant="molecular" className="w-full">
+                <Button variant="molecular" className="w-full" onClick={() => navigate('/dashboard')}>
                   Try Your Own Molecule
                 </Button>
               </div>

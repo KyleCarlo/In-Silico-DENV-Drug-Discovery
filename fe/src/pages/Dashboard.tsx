@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -18,13 +19,85 @@ import {
   History,
   Settings,
   User,
-  LogOut
+  LogOut,
+  X
 } from "lucide-react";
+import pharmtomLogo from "@/assets/pharmtom_tp.png";
+import proteinImage from "@/assets/2BMF.png";
+import ligandImage from "@/assets/CCCSc1ncc(c(n1)C(=O)Nc2nc3ccc(cc3s2)OC)Cl.png";
+import interaction2D from "@/assets/interaction.png";
+import interaction3D from "@/assets/interaction_3d.png";
+import resultImage from "@/assets/result.png";
+import { useNavigate } from "react-router-dom";
 
 export const Dashboard = () => {
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [selectedProtein, setSelectedProtein] = useState("");
+  const [selectedLigand, setSelectedLigand] = useState("");
+  const [showProteinImage, setShowProteinImage] = useState(false);
+  const [showLigandImage, setShowLigandImage] = useState(false);
+  const [enlargedImage, setEnlargedImage] = useState<{ src: string; alt: string } | null>(null);
+  const [searchSpaceX, setSearchSpaceX] = useState("2.5");
+  const [searchSpaceY, setSearchSpaceY] = useState("2.5");
+  const [searchSpaceZ, setSearchSpaceZ] = useState("5.0");
+  const [isShowingInteraction, setIsShowingInteraction] = useState(false);
+  const [showInteractionImages, setShowInteractionImages] = useState(false);
+
+  // Handle keyboard events for closing enlarged image
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && enlargedImage) {
+        setEnlargedImage(null);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [enlargedImage]);
+
+  const handleImageClick = (src: string, alt: string) => {
+    setEnlargedImage({ src, alt });
+  };
+
+  const closeEnlargedImage = () => {
+    setEnlargedImage(null);
+  };
+
+  const handleProteinSelection = (protein: string) => {
+    setSelectedProtein(protein);
+    setShowProteinImage(false);
+    if (protein) {
+      setTimeout(() => {
+        setShowProteinImage(true);
+      }, 1000);
+    }
+  };
+
+  const handleLigandSelection = (ligand: string) => {
+    setSelectedLigand(ligand);
+    setShowLigandImage(false);
+    if (ligand) {
+      setTimeout(() => {
+        setShowLigandImage(true);
+      }, 1000);
+    }
+  };
+
+  const handleShowInteraction = () => {
+    setIsShowingInteraction(true);
+    setShowInteractionImages(false);
+    
+    // Simulate loading for 5 seconds
+    setTimeout(() => {
+      setIsShowingInteraction(false);
+      setShowInteractionImages(true);
+    }, 5000);
+  };
 
   const handleStartAnalysis = () => {
     setIsProcessing(true);
@@ -51,8 +124,9 @@ export const Dashboard = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Atom className="w-6 h-6 text-molecular-blue" />
+              <div className="flex items-center gap-2 hover:cursor-pointer" onClick={() => navigate('/')}>
+                {/* <Atom className="w-6 h-6 text-molecular-blue" /> */}
+                <img src={pharmtomLogo} alt="Pharmtom Labs" className="w-10 h-10" />
                 <span className="text-xl font-bold">QuantumDock</span>
               </div>
             </div>
@@ -185,26 +259,143 @@ export const Dashboard = () => {
                         <div className="grid md:grid-cols-2 gap-6">
                           <div className="space-y-4">
                             <Label htmlFor="protein">Protein Structure</Label>
-                            <div className="border-2 border-dashed border-molecular-blue/20 rounded-lg p-8 text-center hover:border-molecular-blue/40 transition-colors cursor-pointer">
-                              <Upload className="w-8 h-8 text-molecular-blue mx-auto mb-2" />
-                              <div className="text-sm font-medium">Upload PDB file</div>
-                              <div className="text-xs text-muted-foreground">Or drag and drop here</div>
+                            <div className="space-y-3">
+                              <select 
+                                className="w-full p-3 border border-molecular-blue/20 rounded-lg bg-background hover:border-molecular-blue/40 transition-colors"
+                                value={selectedProtein}
+                                onChange={(e) => handleProteinSelection(e.target.value)}
+                              >
+                                <option value="">Select protein structure...</option>
+                                <option value="2BMF">2BMF - Dengue Virus NS3 Protease</option>
+                              </select>
+                              <div className="border-2 border-dashed border-molecular-blue/20 rounded-lg p-8 text-center hover:border-molecular-blue/40 transition-colors cursor-pointer">
+                                <Upload className="w-8 h-8 text-molecular-blue mx-auto mb-2" />
+                                <div className="text-sm font-medium">Upload PDB file</div>
+                                <div className="text-xs text-muted-foreground">Or drag and drop here</div>
+                              </div>
                             </div>
-                            <Input type="text" placeholder="Or enter PDB ID (e.g., 1ABC)" />
+                            {showProteinImage && selectedProtein && (
+                              <div className="mt-4">
+                                <img 
+                                  src={proteinImage} 
+                                  alt="2BMF Protein Structure" 
+                                  className="w-full h-48 object-contain bg-muted rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => handleImageClick(proteinImage, "2BMF Protein Structure")}
+                                />
+                              </div>
+                            )}
                           </div>
 
                           <div className="space-y-4">
                             <Label htmlFor="ligand">Ligand Structure</Label>
-                            <div className="border-2 border-dashed border-molecular-teal/20 rounded-lg p-8 text-center hover:border-molecular-teal/40 transition-colors cursor-pointer">
-                              <Upload className="w-8 h-8 text-molecular-teal mx-auto mb-2" />
-                              <div className="text-sm font-medium">Upload MOL/SDF file</div>
-                              <div className="text-xs text-muted-foreground">Or drag and drop here</div>
+                            <div className="space-y-3">
+                              <select 
+                                className="w-full p-3 border border-molecular-teal/20 rounded-lg bg-background hover:border-molecular-teal/40 transition-colors"
+                                value={selectedLigand}
+                                onChange={(e) => handleLigandSelection(e.target.value)}
+                              >
+                                <option value="">Select ligand structure...</option>
+                                <option value="CCCSc1ncc(c(n1)C(=O)Nc2nc3ccc(cc3s2)OC)Cl">CCCSc1ncc(c(n1)C(=O)Nc2nc3ccc(cc3s2)OC)Cl</option>
+                              </select>
+                              <div className="border-2 border-dashed border-molecular-teal/20 rounded-lg p-8 text-center hover:border-molecular-teal/40 transition-colors cursor-pointer">
+                                <Upload className="w-8 h-8 text-molecular-teal mx-auto mb-2" />
+                                <div className="text-sm font-medium">Upload MOL/SDF file</div>
+                                <div className="text-xs text-muted-foreground">Or drag and drop here</div>
+                              </div>
                             </div>
-                            <Input type="text" placeholder="Or enter SMILES string" />
+                            {showLigandImage && selectedLigand && (
+                              <div className="mt-4">
+                                <img 
+                                  src={ligandImage} 
+                                  alt="Ligand Structure" 
+                                  className="w-full h-48 object-contain bg-muted rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => handleImageClick(ligandImage, "Ligand Structure")}
+                                />
+                              </div>
+                            )}
                           </div>
                         </div>
 
                         <div className="space-y-4">
+                          <Label>Define Search Space</Label>
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="searchX">X Coordinate</Label>
+                              <Input
+                                type="number"
+                                id="searchX"
+                                placeholder="0.0"
+                                value={searchSpaceX}
+                                onChange={(e) => setSearchSpaceX(e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="searchY">Y Coordinate</Label>
+                              <Input
+                                type="number"
+                                id="searchY"
+                                placeholder="0.0"
+                                value={searchSpaceY}
+                                onChange={(e) => setSearchSpaceY(e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor="searchZ">Z Coordinate</Label>
+                              <Input
+                                type="number"
+                                id="searchZ"
+                                placeholder="0.0"
+                                value={searchSpaceZ}
+                                onChange={(e) => setSearchSpaceZ(e.target.value)}
+                              />
+                            </div>
+                          </div>
+                          
+                          <Button 
+                            onClick={handleShowInteraction}
+                            disabled={isShowingInteraction || !selectedProtein || !selectedLigand}
+                            className="w-full"
+                            variant="outline"
+                            size="lg"
+                          >
+                            {isShowingInteraction ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                                Calculating Interactions...
+                              </>
+                            ) : (
+                              "Show Interaction"
+                            )}
+                          </Button>
+                        </div>
+
+                        {showInteractionImages && (
+                          <div className="space-y-4">
+                            <Label>2D/3D Interaction Visualization</Label>
+                            <div className="grid md:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                <Label>2D Interaction</Label>
+                                <img 
+                                  src={interaction2D} 
+                                  alt="2D Molecular Interaction" 
+                                  className="w-full h-48 object-contain bg-muted rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => handleImageClick(interaction2D, "2D Molecular Interaction")}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>3D Interaction</Label>
+                                <img 
+                                  src={interaction3D} 
+                                  alt="3D Molecular Interaction" 
+                                  className="w-full h-48 object-contain bg-muted rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => handleImageClick(interaction3D, "3D Molecular Interaction")}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* <div className="space-y-4">
                           <Label>Quantum Algorithm Settings</Label>
                           <div className="grid md:grid-cols-2 gap-4">
                             <div className="space-y-2">
@@ -224,7 +415,7 @@ export const Dashboard = () => {
                               </select>
                             </div>
                           </div>
-                        </div>
+                        </div> */}
 
                         <Button 
                           onClick={handleStartAnalysis}
@@ -293,17 +484,36 @@ export const Dashboard = () => {
                           </p>
                         </div>
 
+                        {/* Result Image */}
+                        <div className="space-y-4">
+                          <Label>Analysis Result</Label>
+                          <img 
+                            src={resultImage} 
+                            alt="Docking Analysis Result" 
+                            className="w-full h-64 object-contain bg-muted rounded-lg border cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => handleImageClick(resultImage, "Docking Analysis Result")}
+                          />
+                        </div>
+
                         <div className="grid md:grid-cols-3 gap-4">
-                          <Card className="p-4 text-center">
+                          {/* <Card className="p-4 text-center">
                             <div className="text-2xl font-bold text-molecular-blue">-12.4</div>
                             <div className="text-sm text-muted-foreground">Binding Affinity (kcal/mol)</div>
+                          </Card> */}
+                          <Card className="p-4 text-center">
+                            <div className="text-lg font-bold text-molecular-green">-47120.104</div>
+                            <div className="text-xs text-muted-foreground">Hartree-Fock Energy (kcal/mol)</div>
                           </Card>
                           <Card className="p-4 text-center">
+                            <div className="text-lg font-bold text-molecular-orange">-47401.946</div>
+                            <div className="text-xs text-muted-foreground">DFT Energy (kcal/mol)</div>
+                          </Card>
+                          {/* <Card className="p-4 text-center">
                             <div className="text-2xl font-bold text-molecular-teal">99.2%</div>
                             <div className="text-sm text-muted-foreground">Quantum Confidence</div>
-                          </Card>
+                          </Card> */}
                           <Card className="p-4 text-center">
-                            <div className="text-2xl font-bold text-molecular-purple">2.1 min</div>
+                            <div className="text-2xl font-bold text-molecular-purple">5 min</div>
                             <div className="text-sm text-muted-foreground">Processing Time</div>
                           </Card>
                         </div>
@@ -416,6 +626,31 @@ export const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Image Enlargement Modal */}
+      {enlargedImage && (
+        <div 
+          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+          onClick={closeEnlargedImage}
+        >
+          <div className="relative max-w-4xl max-h-full">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white z-10"
+              onClick={closeEnlargedImage}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            <img
+              src={enlargedImage.src}
+              alt={enlargedImage.alt}
+              className="max-w-full max-h-full object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

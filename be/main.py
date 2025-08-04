@@ -287,7 +287,11 @@ async def upload_protein_file(file: UploadFile = File(...)):
 @app.get("/proteins/")
 async def list_proteins():
     """List all proteins"""
-    return {"proteins": proteins_db}
+    return {
+        "proteins": [
+            {"id": k, **v.dict()} for k, v in proteins_db.items()
+        ]
+    }
 
 @app.get("/proteins/{protein_id}")
 async def get_protein(protein_id: str):
@@ -295,6 +299,14 @@ async def get_protein(protein_id: str):
     if protein_id not in proteins_db:
         raise HTTPException(status_code=404, detail="Protein not found")
     return proteins_db[protein_id]
+
+@app.delete("/proteins/{protein_id}")
+async def delete_protein(protein_id: str):
+    """Delete a specific protein"""
+    if protein_id not in proteins_db:
+        raise HTTPException(status_code=404, detail="Protein not found")
+    del proteins_db[protein_id]
+    return {"message": "Protein deleted successfully"}
 
 # Ligand endpoints
 @app.post("/ligands/", response_model=LigandInfo)
@@ -347,7 +359,11 @@ async def create_ligand_from_smiles(smiles: str, name: str = "Generated Ligand")
 @app.get("/ligands/")
 async def list_ligands():
     """List all ligands"""
-    return {"ligands": ligands_db}
+    return {
+        "ligands": [
+            {"id": k, **v.dict()} for k, v in ligands_db.items()
+        ]
+    }
 
 @app.get("/ligands/{ligand_id}")
 async def get_ligand(ligand_id: str):
@@ -424,7 +440,11 @@ async def get_docking_job(job_id: str):
 @app.get("/docking/jobs/")
 async def list_docking_jobs():
     """List all docking jobs"""
-    return {"jobs": list(docking_jobs.values())}
+    return {
+        "jobs": [
+            {"id": k, **v.dict()} for k, v in docking_jobs.items()
+        ]
+    }
 
 @app.delete("/docking/jobs/{job_id}")
 async def delete_docking_job(job_id: str):

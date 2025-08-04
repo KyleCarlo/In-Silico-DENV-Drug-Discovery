@@ -61,8 +61,8 @@ export function useProteins() {
 
   const loadProteins = useCallback(async () => {
     const result = await execute(() => api.getProteins());
-    if (result) {
-      setProteins(result);
+    if (result && result.proteins) {
+      setProteins(result.proteins);
     }
   }, [execute]);
 
@@ -118,8 +118,8 @@ export function useLigands() {
 
   const loadLigands = useCallback(async () => {
     const result = await execute(() => api.getLigands());
-    if (result) {
-      setLigands(result);
+    if (result && result.ligands) {
+      setLigands(result.ligands);
     }
   }, [execute]);
 
@@ -184,8 +184,8 @@ export function useDocking() {
 
   const loadJobs = useCallback(async (status?: string) => {
     const result = await execute(() => api.getDockingJobs(status));
-    if (result) {
-      setJobs(result);
+    if (result && result.jobs) {
+      setJobs(result.jobs);
     }
   }, [execute]);
 
@@ -246,7 +246,7 @@ export function useDocking() {
       await api.pollJobStatus(jobId, (updatedJob) => {
         setActiveJob(updatedJob);
         setJobs(prevJobs => 
-          prevJobs.map(job => job.id === jobId ? updatedJob : job)
+          prevJobs.map(job => job.job_id === jobId ? updatedJob : job)
         );
       });
     } catch (err) {

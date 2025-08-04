@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * API service for QuantumDock backend integration
  */
@@ -51,6 +52,7 @@ export interface DockingParameters {
 }
 
 export interface DockingJob {
+  job_id: string;
   id: string;
   protein_id: string;
   ligand_id: string;
@@ -133,7 +135,7 @@ class QuantumDockAPI {
   }
 
   // Protein APIs
-  async getProteins(): Promise<ProteinInfo[]> {
+  async getProteins(): Promise<{proteins: ProteinInfo[]}> {
     return this.request('/proteins/');
   }
 
@@ -172,8 +174,14 @@ class QuantumDockAPI {
     return response.blob();
   }
 
+  async deleteProteinFile(proteinId: string): Promise<{ message: string }> {
+    return this.request(`/proteins/${proteinId}`, {
+      method: 'DELETE',
+    });
+  }
+
   // Ligand APIs
-  async getLigands(): Promise<LigandInfo[]> {
+  async getLigands(): Promise<{ligands: LigandInfo[] }> {
     return this.request('/ligands/');
   }
 
@@ -248,7 +256,7 @@ class QuantumDockAPI {
     status?: string,
     limit: number = 100,
     offset: number = 0
-  ): Promise<DockingJob[]> {
+  ): Promise<{jobs: DockingJob[] }> {
     const params = new URLSearchParams({
       limit: limit.toString(),
       offset: offset.toString(),

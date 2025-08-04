@@ -55,6 +55,7 @@ This prototype showcases how quantum models—particularly QNNs—can enhance dr
 - Implement the Variational Quantum Eigensolver (VQE) for post-docking analysis to calculate interaction energies.
 - Explore additional quantum machine learning models for improved binding affinity predictions.
 
-# Presentation Link
+# Presentation
 
-- [PharmtomLabs Presentation](https://www.canva.com/design/DAGu-9Qc-3U/vkbabdZUwydAtGLEGx2tbg/view?utm_content=DAGu-9Qc-3U&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h9ab31364c1)
+- [Pitch Deck](https://www.canva.com/design/DAGu-9Qc-3U/vkbabdZUwydAtGLEGx2tbg/view?utm_content=DAGu-9Qc-3U&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=h9ab31364c1)
+- [Demo UI](https://in-silico-denv-drug-discovery.vercel.app/)

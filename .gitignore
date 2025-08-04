@@ -1,2 +1,4 @@
 .ipynb_checkpoints/
 Meeko/
+data/__pycache__/
+*.pickle

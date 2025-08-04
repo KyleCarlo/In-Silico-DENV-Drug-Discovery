@@ -48,7 +48,7 @@ Key features:
 
 - All components and experiments are documented in working_notebook.ipynb.
 
-This prototype showcases how quantum models—particularly QNNs—can enhance drug discovery workflows by offering new ways to estimate binding affinities and plan quantum-assisted post-docking analysis.
+This prototype showcases how quantum models—particularly QNNs—can enhance drug discovery workflows by offering new ways to estimate binding affinities and plan quantum-assisted post-docking analysis. The main platform used for this prototype is qBraid, which provides a user-friendly interface for quantum computing tasks.
 
 # Future Work
 
